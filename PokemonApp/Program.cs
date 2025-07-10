@@ -8,12 +8,16 @@ using System.Security.Claims;
 using System.Text;
 using PokemonApp.Services;
 using Microsoft.OpenApi.Models;
+using PokemonApp.DomainModels;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
 
 var jwtKey = "2YvWz9yU7R1V9mNefYos0CRmXlj8T4qfZRaCzNWo6m8=\r\n"; // Store securely
 
@@ -64,6 +68,33 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PokemonDbContext>();
+    db.Database.EnsureCreated();
+
+    if (!db.Users.Any())
+    {
+        var randomClaims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, "testUser"),
+            new Claim(ClaimTypes.Email, "testuser@example.com"),
+            new Claim(ClaimTypes.Role, "User"),
+            new Claim("CustomClaim1", "Value1"),
+            new Claim("CustomClaim2", "Value2")
+        };
+
+        db.Users.Add(new User
+        {
+            Username = "test",
+            PasswordHash = "test123",
+            Id = new Random().Next(500),
+            Claims = randomClaims.Select(c => new UserClaim { Type = c.Type, Value = c.Value }).ToList()
+        });
+        db.SaveChanges();
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -113,7 +144,7 @@ app.MapGet("/", async ([FromQuery] string? name, [FromQuery] int? ID) =>
 {
     try
     {
-        //TODO: IMPLEMENT SQL SERVER/EF
+       
         var pokeServe = new PokemonServices(new HttpClient());
         var pokemonReturnedFromAPI = await pokeServe.GetPokemon(new PokemonRequestModel { Name = name, ID = ID });
         if (pokemonReturnedFromAPI == new PokemonResponseModel()) return Results.NotFound(new { Error = "Pokemon not found. Please check the name or ID." });
