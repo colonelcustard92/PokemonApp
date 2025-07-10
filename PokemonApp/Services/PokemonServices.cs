@@ -1,72 +1,31 @@
-﻿using PokemonApp.Models;
-using PokemonApp.DTOs;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using PokemonApp.RequestModels;
+using PokemonApp.Models;
 
 namespace PokemonApp.Services
 {
     public class PokemonServices
     {
-
-        public async Task<Pokemon> GetPokemon(PokemonDTO requestParams)
-        {
-            // Validate the request body
-            if (requestParams == null || string.IsNullOrEmpty(requestParams.Name) && requestParams.ID == null)
-            {
-                throw new ArgumentException("Invalid request. Either Name or ID must be provided.");
-            }
-
-            // Call the external API to get the Pokemon data
-            var pokemonData = await GetPokemonData(new PokemonDTO { ID = requestParams.ID, Name = requestParams.Name });
-
-            var resultData = new Pokemon
-            {
-                
-                Name = pokemonData.Name,
-                Sprite = pokemonData.Sprite,
-                Height = pokemonData.Height,
-                Weight = pokemonData.Weight,
-                Abilities = pokemonData.Abilities,
-                Types = pokemonData.Types
-            };
-
-            //Map the API response to the Pokemon model
-            return resultData;
+        public async Task<PokemonResponseModel> GetPokemon(PokemonRequestModel requestParams)
+        { 
+            var pokemonData = await GetPokemonData(new PokemonRequestModel { ID = requestParams.ID, Name = requestParams.Name });          
+            return pokemonData;
         }
 
-
-            private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClient;
 
         public PokemonServices(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
 
-        public async Task<Pokemon> GetPokemonData(PokemonDTO request)
+        public async Task<PokemonResponseModel> GetPokemonData(PokemonRequestModel request)
         {
-            // Replace with actual API call to fetch Pokemon data
-            var response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{request.Name?.ToLower()}");
+            HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{request.ID.ToString() ?? request.Name ?? throw new ArgumentNullException()}"); // ID, Name - or throw exception if both are null, handle this in the top-level request handler
             response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(json);
-
-            var pokemon = new Pokemon
-            {
-                Name = data["name"]?.ToString()??"",
-                Height = data["height"]?.Value<int>() ?? 0,
-                Weight = data["weight"]?.Value<int>() ?? 0,
-                Sprite = data["sprites"]?["front_default"]?.ToString() ??"",
-                Abilities = data["abilities"].Select(a => a["ability"]?["name"]?.ToString())
-                    .Where(name => name != null)
-                    .ToList(),
-                Types = data["types"]
-                    ?.Select(t => t["type"]?["name"]?.ToString())
-                    .Where(name => name != null)
-                    .ToList()
-            };
-           
+            var jsonString = await response.Content.ReadAsStringAsync();
+            var pokemon = JsonConvert.DeserializeObject<PokemonResponseModel>(jsonString) ?? new PokemonResponseModel();
             return pokemon;
         }
     }
 }
-

@@ -1,6 +1,6 @@
-namespace PokemonApp.DTOs;
+namespace PokemonApp.RequestModels;
 
-public class PokemonDTO
+public class PokemonRequestModel
 {
     public string? Name { get; set; }
     public int? ID { get; set; }

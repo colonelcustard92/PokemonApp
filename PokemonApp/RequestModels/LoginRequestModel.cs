@@ -1,6 +1,6 @@
-﻿namespace PokemonApp.DTOs
+﻿namespace PokemonApp.RequestModels
 {
-        public class LoginDTO
+        public class LoginRequestModel
         {
             public required string Username { get; set; }
             public required string Password { get; set; }
