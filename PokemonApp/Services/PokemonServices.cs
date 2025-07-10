@@ -21,10 +21,25 @@ namespace PokemonApp.Services
 
         public async Task<PokemonResponseModel> GetPokemonData(PokemonRequestModel request)
         {
-            HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{request.Id.ToString() ?? request.Name ?? throw new ArgumentNullException()}"); // ID, Name - or throw exception if both are null, handle this in the top-level request handler
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            // Determine the identifier to use in the URL
+            string identifier = request.Id.HasValue
+                ? request.Id.Value.ToString()
+                : !string.IsNullOrWhiteSpace(request.Name)
+                    ? request.Name.ToLower()
+                    : throw new ArgumentNullException("Either Id or Name must be provided.");
+
+            // Make the API request
+            HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{identifier}");
             response.EnsureSuccessStatusCode();
+
             var jsonString = await response.Content.ReadAsStringAsync();
-            var pokemon = JsonConvert.DeserializeObject<PokemonResponseModel>(jsonString) ?? new PokemonResponseModel();
+
+            // Deserialize into your expected model
+            var pokemon = JsonConvert.DeserializeObject<PokemonResponseModel>(jsonString);
+
             return pokemon;
         }
     }

@@ -6,6 +6,8 @@ using PokemonApp.RequestModels;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PokemonApp.Services;
 using Microsoft.OpenApi.Models;
 using PokemonApp.DomainModels;
@@ -65,6 +67,10 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddDbContext<PokemonDbContext>(options =>
+    options.UseSqlite("Data Source=pokedex.db"));
+
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -87,7 +93,7 @@ using (var scope = app.Services.CreateScope())
         {
             Username = "test",
             PasswordHash = "test123",
-            Id = new Random().Next(500),
+            Id = new Random().Next(500), //I'd use a GUID in production to guarantee uniqueness - Random() isn't truly Random after all :)
             Claims = randomClaims.Select(c => new UserClaim { Type = c.Type, Value = c.Value }).ToList()
         });
         db.SaveChanges();
@@ -106,38 +112,39 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapPost("/login", ([FromBody] LoginRequestModel request) =>
-{
-    if (request is { Username: "admin", Password: "password" }) // Simplified for testing
     {
-        //Generate Claims
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, request.Username),
-            new Claim(ClaimTypes.Role, "Admin")
-        };
+        using var context = new PokemonDbContext();
 
-        // Create JWT Token
+        // Find the user
+        var user = context.Users.FirstOrDefault(u => u.Username == request.Username);
+        if (user is null) return Results.NotFound("User not found");
+
+        // Plaintext password check (OK for coding test)
+        if (user.PasswordHash != request.Password) return Results.Unauthorized();
+
+        // Create JWT token
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        //Assign Claims to the Token
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, user.Username)
+        };
+
         var token = new JwtSecurityToken(
-            issuer: null,
-            audience: null,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(30),
             signingCredentials: creds
         );
-        //Return the Token
-        return Results.Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token) });
-    }
 
-    //If they got this far, they are unauthorized
-    return Results.Unauthorized();
-}).WithName("Login")
-  .Produces(200)
-  .Produces(401)
-  .WithOpenApi();
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+        return Results.Ok(new { Token = tokenString });
+
+    })
+    .WithName("Login")
+    .Produces(200)
+    .Produces(401)
+    .WithOpenApi();
 
 app.MapGet("/", async ([FromQuery] string? name, [FromQuery] int? id) =>
 {
