@@ -1,0 +1,24 @@
+PokemonApp/obj
+PokemonApp/bin
+PokemonApp/PokemonApp.csproj.user
+# Visual Studio files
+.vs/
+# Rider files
+.idea/
+# Build results
+*.dll
+*.exe
+# NuGet packages
+*.nupkg
+# Logs
+*.log
+# Temporary files
+*.tmp
+# User-specific files
+*.user
+# Backup files
+*.bak
+# Configuration files
+*.config
+# OS generated files
+.DS_Store
