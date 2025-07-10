@@ -8,7 +8,7 @@ namespace PokemonApp.Services
     {
         public async Task<PokemonResponseModel> GetPokemon(PokemonRequestModel requestParams)
         { 
-            var pokemonData = await GetPokemonData(new PokemonRequestModel { ID = requestParams.ID, Name = requestParams.Name });          
+            var pokemonData = await GetPokemonData(new PokemonRequestModel { Id = requestParams.Id, Name = requestParams.Name });          
             return pokemonData;
         }
 
@@ -21,7 +21,7 @@ namespace PokemonApp.Services
 
         public async Task<PokemonResponseModel> GetPokemonData(PokemonRequestModel request)
         {
-            HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{request.ID.ToString() ?? request.Name ?? throw new ArgumentNullException()}"); // ID, Name - or throw exception if both are null, handle this in the top-level request handler
+            HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{request.Id.ToString() ?? request.Name ?? throw new ArgumentNullException()}"); // ID, Name - or throw exception if both are null, handle this in the top-level request handler
             response.EnsureSuccessStatusCode();
             var jsonString = await response.Content.ReadAsStringAsync();
             var pokemon = JsonConvert.DeserializeObject<PokemonResponseModel>(jsonString) ?? new PokemonResponseModel();

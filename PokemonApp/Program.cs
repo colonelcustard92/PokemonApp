@@ -9,7 +9,6 @@ using System.Text;
 using PokemonApp.Services;
 using Microsoft.OpenApi.Models;
 using PokemonApp.DomainModels;
-using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +44,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter your JWT in the format: Bearer {your token here}"
+        Description = "Paste your JWT Key here"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -77,11 +76,11 @@ using (var scope = app.Services.CreateScope())
     {
         var randomClaims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, "testUser"),
-            new Claim(ClaimTypes.Email, "testuser@example.com"),
-            new Claim(ClaimTypes.Role, "User"),
-            new Claim("CustomClaim1", "Value1"),
-            new Claim("CustomClaim2", "Value2")
+            new(ClaimTypes.Name, "testUser"),
+            new(ClaimTypes.Email, "testuser@example.com"),
+            new(ClaimTypes.Role, "User"),
+            new("CustomClaim1", "Value1"),
+            new("CustomClaim2", "Value2")
         };
 
         db.Users.Add(new User
@@ -108,7 +107,7 @@ app.UseAuthorization();
 
 app.MapPost("/login", ([FromBody] LoginRequestModel request) =>
 {
-    if (request.Username == "admin" && request.Password == "password") // Simplified for testing
+    if (request is { Username: "admin", Password: "password" }) // Simplified for testing
     {
         //Generate Claims
         var claims = new[]
@@ -140,29 +139,28 @@ app.MapPost("/login", ([FromBody] LoginRequestModel request) =>
   .Produces(401)
   .WithOpenApi();
 
-app.MapGet("/", async ([FromQuery] string? name, [FromQuery] int? ID) =>
+app.MapGet("/", async ([FromQuery] string? name, [FromQuery] int? id) =>
 {
     try
     {
-       
         var pokeServe = new PokemonServices(new HttpClient());
-        var pokemonReturnedFromAPI = await pokeServe.GetPokemon(new PokemonRequestModel { Name = name, ID = ID });
-        if (pokemonReturnedFromAPI == new PokemonResponseModel()) return Results.NotFound(new { Error = "Pokemon not found. Please check the name or ID." });
+        var pokemonReturnedFromApi = await pokeServe.GetPokemon(new PokemonRequestModel { Name = name, Id = id });
+        if (pokemonReturnedFromApi == new PokemonResponseModel()) return Results.NotFound(new { Error = "Pokemon not found. Please check the name or ID." });
 
         return Results.Ok(new PokemonResponseModel
         {
-            Name = pokemonReturnedFromAPI.Name,
-            Sprites = pokemonReturnedFromAPI.Sprites,
-            Height = pokemonReturnedFromAPI.Height,
-            Weight = pokemonReturnedFromAPI.Weight,
-            Abilities = pokemonReturnedFromAPI.Abilities,
-            Types = pokemonReturnedFromAPI.Types
+            Name = pokemonReturnedFromApi.Name,
+            Sprites = pokemonReturnedFromApi.Sprites,
+            Height = pokemonReturnedFromApi.Height,
+            Weight = pokemonReturnedFromApi.Weight,
+            Abilities = pokemonReturnedFromApi.Abilities,
+            Types = pokemonReturnedFromApi.Types
         });
     }
     catch (Exception ex)
     {
         return Results.Json(
-            new { Error = "An unexpected error occurred.", Details = ex.Message, StackTrace = ex.StackTrace },
+            new { Error = "An unexpected error occurred.", Details = ex.Message, ex.StackTrace },
             statusCode: 500
         );
     }

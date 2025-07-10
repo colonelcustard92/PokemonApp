@@ -1,11 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
-using PokemonApp.DomainModels;
-
-public class PokemonDbContext : DbContext
+namespace PokemonApp.DomainModels;
+public class PokemonDbContext(DbContextOptions<PokemonDbContext> options) : DbContext(options)
 {
-    public PokemonDbContext(DbContextOptions<PokemonDbContext> options)
-        : base(options) { }
-
     public DbSet<User> Users { get; set; }
 }
