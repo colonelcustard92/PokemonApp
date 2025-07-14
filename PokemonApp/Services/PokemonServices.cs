@@ -24,12 +24,13 @@ namespace PokemonApp.Services
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            // Determine the identifier to use in the URL
-            string identifier = request.Id.HasValue
-                ? request.Id.Value.ToString()
-                : !string.IsNullOrWhiteSpace(request.Name)
-                    ? request.Name.ToLower()
-                    : throw new ArgumentNullException("Either Id or Name must be provided.");
+            bool hasId = request.Id.HasValue;
+            bool hasName = !string.IsNullOrWhiteSpace(request.Name);
+
+            if (hasId == hasName) // both provided or neither
+                throw new BadHttpRequestException("Either Id or Name must be provided, but not both.");
+
+            string identifier = hasId ? request.Id.Value.ToString() : request.Name!.ToLower();
 
             // Make the API request
             HttpResponseMessage response = await _httpClient.GetAsync($"https://pokeapi.co/api/v2/pokemon/{identifier}");
