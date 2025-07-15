@@ -37,8 +37,7 @@ namespace PokemonApp.Services
             response.EnsureSuccessStatusCode();
 
             var jsonString = await response.Content.ReadAsStringAsync();
-
-            // Deserialize into your expected model
+            
             var pokemon = JsonConvert.DeserializeObject<PokemonResponseModel>(jsonString);
 
             return pokemon;
