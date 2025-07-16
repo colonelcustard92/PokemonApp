@@ -18,18 +18,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVueApp", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("https://localhost:5173") // Vue dev server URL
+        policy.AllowAnyOrigin() // Allow all origins for testing purposes (not prod!!)
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+        
     });
 });
-
 
 
 var jwtKey = "2YvWz9yU7R1V9mNefYos0CRmXlj8T4qfZRaCzNWo6m8=\r\n"; // Store securely
@@ -49,7 +47,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PokeDex", Version = "v1" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -84,7 +82,7 @@ builder.Services.AddDbContext<PokemonDbContext>(options =>
 
 
 var app = builder.Build();
-app.UseCors("AllowVueApp");
+app.UseCors("AllowAll"); //Never in production!!
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PokemonDbContext>();
